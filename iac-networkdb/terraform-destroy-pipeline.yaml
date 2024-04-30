@@ -1,0 +1,15 @@
+trigger: [ none ] # Não dispara automaticamente a pipeline de destruição da infraestrutura.
+
+resources:
+  repositories:
+    - repository: templates
+      type: git
+      name: Infraestrutura/TerraformTemplates
+
+jobs:
+- template: destroypipeline.yaml@templates # Referencia ao template para destruir a infraestrutura.
+  parameters:
+    tfvars_file: '$(build.repository.name).tfvars'
+    service_connection: 'tf-service-connection'
+    workingDirectory: 'terraform'
+    terraformVersion: 'latest'

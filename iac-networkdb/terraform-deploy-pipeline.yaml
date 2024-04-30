@@ -1,0 +1,25 @@
+# specific path build
+trigger:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - terraform
+
+resources:
+  repositories:
+    - repository: templates
+      type: git
+      name: Infraestrutura/TerraformTemplates
+
+variables:
+  TF_VAR_IMAGE_VERSION: $(Build.SourceVersion)
+
+jobs:
+- template: deploypipeline.yaml@templates
+  parameters:
+    tfvars_file: '$(build.repository.name)-$(build.sourcebranchname).tfvars'
+    service_connection: 'tf-service-connection'
+    workingDirectory: 'terraform'
+    terraformVersion: 'latest'

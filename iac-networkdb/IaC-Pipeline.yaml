@@ -1,0 +1,82 @@
+name: IaC-Pipeline
+
+trigger:
+  branches:
+    include:
+    - '*'
+  paths:
+    exclude:
+    - '*'
+
+variables:
+- group: networkdb-hml-backend-variables
+
+stages:
+- stage: TerraformCICD
+  displayName: Terraform Module - CI/CD
+  jobs:
+  - job: TerraformPlan
+    displayName: Terraform Plan
+    steps:
+    - task: TerraformInstaller@1
+      displayName: Install terraform
+      inputs:
+        terraformVersion: latest
+    - task: TerraformCLI@1
+      displayName: Terraform Init
+      inputs:
+        command: 'init'
+        workingDirectory: 'terraform'
+        backendType: 'azurerm'
+        backendServiceArm: 'tf-service-connection'
+        backendAzureRmResourceGroupName: $(storage_account_rg)
+        backendAzureRmStorageAccountName: $(storage_account_name)
+        backendAzureRmContainerName: $(storage_account_container)
+        backendAzureRmKey: $(tfstate_key)
+        allowTelemetryCollection: true
+    - task: TerraformCLI@1
+      displayName: Terraform Plan
+      inputs:
+        command: 'plan'
+        workingDirectory: 'terraform'
+        environmentServiceName: 'tf-service-connection'
+        runAzLogin: true
+        secureVarsFile: 'secure-file'
+        allowTelemetryCollection: true
+        publishPlanResults: 'Plan'
+  - job: ApproveDeploy
+    dependsOn: TerraformPlan
+    displayName: Terraform Apply Validation
+    pool: server
+    timeoutInMinutes: 720
+    steps:
+    - task: ManualValidation@0
+      timeoutInMinutes: 720
+      inputs:
+        instructions: 'Deseja aplicar o planejado?'
+        onTimeout: 'reject'
+  - job: TerraformDeploy
+    dependsOn: ApproveDeploy
+    displayName: Terraform Apply Execution
+    steps:
+    - task: TerraformCLI@1
+      displayName: Terraform Init
+      inputs:
+        command: 'init'
+        workingDirectory: 'terraform'
+        backendType: 'azurerm'
+        backendServiceArm: 'tf-service-connection'
+        backendAzureRmResourceGroupName: $(storage_account_rg)
+        backendAzureRmStorageAccountName: $(storage_account_name)
+        backendAzureRmContainerName: $(storage_account_container)
+        backendAzureRmKey: $(tfstate_key)
+        allowTelemetryCollection: true
+    - task: TerraformCLI@1
+      displayName: Terraform Apply
+      inputs:
+        command: 'apply'
+        workingDirectory: 'terraform'
+        environmentServiceName: 'tf-service-connection'
+        runAzLogin: true
+        secureVarsFile: 'secure-file'
+        allowTelemetryCollection: true
