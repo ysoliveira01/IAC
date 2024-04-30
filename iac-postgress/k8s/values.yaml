@@ -1,0 +1,17 @@
+grafana.ini:
+  paths:
+    data: /var/lib/grafana/
+    logs: /var/log/grafana
+    plugins: /var/lib/grafana/plugins
+    provisioning: /etc/grafana/provisioning
+  database:
+    type: postgres
+    host: host:port
+    name: <name-pg>
+    user: user
+    password: "${POSTGRESQL_PASSWORD}"
+  envValueFrom:
+    POSTGRESQL_PASSWORD:
+      secretKeyRef:
+        name: postgresql-password
+        key: password
